@@ -21,14 +21,34 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-        const AppointmentCollections = client.db("HelloDoctors").collection('options')
+        const appointmentCollections = client.db("HelloDoctors").collection('options');
+        const bookingCollections = client.db("HelloDoctors").collection('bookings')
 
-        app.get('/options', async (req, res) => {
+
+        app.get('/appointmentOptions', async (req, res) => {
+            const date = req.query.date
             const query = {};
-            const result = await AppointmentCollections.find(query).toArray();
-            res.send(result);
+            const options = await appointmentCollections.find(query).toArray();
+            const booking = { appointmentDate: date }
+            const alreadyBooked = await bookingCollections.find(booking).toArray();
+            options.forEach(option => {
+                const optionBooked = alreadyBooked.filter(book => book.treatment === option.name);
+                const bookSlots = optionBooked.map(book => book.slot)
+                console.log(bookSlots);
+                
+            })
+            res.send(options);
+        });
 
+
+        app.post('/bookings', async (req, res) => {
+            const booking = req.body;
+            console.log(booking);
+            const result = await bookingCollections.insertOne(booking);
+            res.send(result);
         })
+
+
     } finally {
 
     }
