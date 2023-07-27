@@ -36,8 +36,8 @@ async function run() {
             options.forEach(option => {
                 const optionBooked = alreadyBooked.filter(book => book.treatment === option.name);
                 const bookSlots = optionBooked.map(book => book.slot);
-                const remainingSlots = option.slots.filter(slot=> !bookSlots.includes(slot));
-                option.slots = remainingSlots;                
+                const remainingSlots = option.slots.filter(slot => !bookSlots.includes(slot));
+                option.slots = remainingSlots;
             })
             res.send(options);
         });
@@ -45,23 +45,32 @@ async function run() {
 
         app.post('/bookings', async (req, res) => {
             const booking = req.body;
+            console.log(booking);
 
             const query = {
                 appointmentDate: booking.appointmentDate,
                 email: booking.email,
                 treatment: booking.treatment
             };
-            
+
             const alreadyBooked = await bookingCollections.find(query).toArray()
-             
-            if(alreadyBooked.length){
+
+            if (alreadyBooked.length) {
                 const text = `You already have a booking on ${booking.appointmentDate}`
-                return res.send({acknowledged: false, text})
+                return res.send({ acknowledged: false, text })
             }
 
             const result = await bookingCollections.insertOne(booking);
             res.send(result);
-        }) 
+        });
+
+
+        app.get('/bookings', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const result = await bookingCollections.find(query).toArray();
+            res.send(result)
+        })
 
 
     } finally {
