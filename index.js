@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion, deserialize } = require('mongodb');
+const { MongoClient, ServerApiVersion, deserialize, ObjectId } = require('mongodb');
 var jwt = require('jsonwebtoken');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
@@ -20,24 +20,21 @@ const client = new MongoClient(uri, {
     }
 });
 
-// jwt common function
-
+// JWT function
 function verifyJWT(req, res, next) {
     const authHeader = req.headers.authorization;
-    console.log(authHeader);
     if (!authHeader) {
-        return res.status(401).send('unauthorized access')
+        return res.status(401).send('unauthorize access')
     }
     const token = authHeader.split(' ')[1]
     jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
         if (err) {
-            return res.status(401).send('forbidden access')
+            return res.status(403).send({ message: 'forbidden access' })
         }
         req.decoded = decoded;
         next();
-    })
-}
-
+    });
+};
 
 async function run() {
     try {
@@ -86,27 +83,23 @@ async function run() {
         app.get('/bookings', verifyJWT, async (req, res) => {
             const email = req.query.email;
             const decodedEmail = req.decoded.email;
-
-            if (decodedEmail !== email) {
+            if (email !== decodedEmail) {
                 return res.status(403).send({ message: 'forbidden access' })
             }
-
             const query = { email: email };
             const result = await bookingCollections.find(query).toArray();
             res.send(result)
         });
 
 
-        // jwt
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;
-            const query = { email: email }
-            const user = await userCollections.findOne(query)
+            const query = { email: email };
+            const user = await userCollections.findOne(query);
             if (user) {
                 const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, { expiresIn: '1h' });
                 res.send({ accessToken: token })
             }
-            console.log(user);
             res.status(403).send({ accessToken: '' })
         })
 
@@ -116,6 +109,44 @@ async function run() {
             const result = await userCollections.insertOne(query);
             res.send(result)
         });
+
+
+        app.get('/users', async (req, res) => {
+            const query = {};
+            const result = await userCollections.find(query).toArray();
+            res.send(result);
+        });
+
+
+        app.delete('/user/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const result = await userCollections.deleteOne(filter);
+            res.send(result);
+        })
+
+        // status update Make Admin
+        app.put('/user/admin/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const decodedEmail = req.decoded.email;
+            const query = { email: decodedEmail }
+            const user = await userCollections.findOne(query)
+
+            if (user?.role !== "Admin") {
+                const text = `${user?.name} is not eligible to make admin some one `
+                return res.send({text} )
+            }
+            const filter = { _id: new ObjectId(id) }
+            const options = { upsert: true }
+            const updateDoc = {
+                $set: {
+                    role: 'Admin'
+                }
+            }
+            const result = await userCollections.updateOne(filter, updateDoc, options);
+            res.send(result)
+        });
+
 
 
     } finally {
