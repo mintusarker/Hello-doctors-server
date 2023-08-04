@@ -27,6 +27,7 @@ function verifyJWT(req, res, next) {
         return res.status(401).send('unauthorize access')
     }
     const token = authHeader.split(' ')[1]
+    // console.log(token);
     jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
         if (err) {
             return res.status(403).send({ message: 'forbidden access' })
@@ -38,9 +39,12 @@ function verifyJWT(req, res, next) {
 
 async function run() {
     try {
+        // await client.connect();
+
         const appointmentCollections = client.db("HelloDoctors").collection('options');
         const bookingCollections = client.db("HelloDoctors").collection('bookings')
         const userCollections = client.db("HelloDoctors").collection('users')
+        const doctorsCollections = client.db("HelloDoctors").collection('doctors')
 
 
         app.get('/appointmentOptions', async (req, res) => {
@@ -91,22 +95,24 @@ async function run() {
             res.send(result)
         });
 
-
+        // jwt
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;
-            const query = { email: email };
-            const user = await userCollections.findOne(query);
+            console.log(email);
+            const query = { email: email }
+            console.log(query);
+            const user = await userCollections.findOne(query)
             if (user) {
-                const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, { expiresIn: '1h' });
-                res.send({ accessToken: token })
+                const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, { expiresIn: '1h' })
+                return res.status(403).send({ accessToken: token })
             }
-            res.status(403).send({ accessToken: '' })
+            res.send({ accessToken: '' })
         })
 
         //save user
         app.post('/users', async (req, res) => {
-            const query = req.body;
-            const result = await userCollections.insertOne(query);
+            const user = req.body;
+            const result = await userCollections.insertOne(user);
             res.send(result)
         });
 
@@ -123,6 +129,15 @@ async function run() {
             const filter = { _id: new ObjectId(id) }
             const result = await userCollections.deleteOne(filter);
             res.send(result);
+        });
+
+        //  get admin email
+        app.get('/user/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email }
+            const user = await userCollections.findOne(query)
+            const admin = user?.role === 'Admin'
+            res.send({ isAdmin: admin })
         })
 
         // status update Make Admin
@@ -134,7 +149,7 @@ async function run() {
 
             if (user?.role !== "Admin") {
                 const text = `${user?.name} is not eligible to make admin some one `
-                return res.send({text} )
+                return res.send({ text })
             }
             const filter = { _id: new ObjectId(id) }
             const options = { upsert: true }
@@ -147,6 +162,18 @@ async function run() {
             res.send(result)
         });
 
+
+        app.get('/specialty', async (req, res) => {
+            const query = {};
+            const result = await appointmentCollections.find(query).project({ name: 1 }).toArray();
+            res.send(result)
+        });
+
+        app.post('/doctors', verifyJWT, async (req, res) => {
+            const doctor = req.body;
+            const result = await doctorsCollections.insertOne(doctor);
+            res.send(result);
+        })
 
 
     } finally {
@@ -165,3 +192,4 @@ app.get('/', async (req, res) => {
 
 
 app.listen(port, () => console.log(`server running on ${port}`))
+
