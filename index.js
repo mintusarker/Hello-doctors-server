@@ -173,6 +173,19 @@ async function run() {
             const doctor = req.body;
             const result = await doctorsCollections.insertOne(doctor);
             res.send(result);
+        });
+
+        app.get('/doctors', async (req, res) => {
+            const query = {};
+            const result = await doctorsCollections.find(query).toArray();
+            res.send(result);
+        });
+
+        app.delete('/doctors/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const result = await doctorsCollections.deleteOne(filter);
+            res.send(result);
         })
 
 
