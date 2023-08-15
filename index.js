@@ -47,6 +47,14 @@ async function run() {
         const doctorsCollections = client.db("HelloDoctors").collection('doctors')
 
 
+        // //verify Admin
+        // const verifyAdmin = (req, res, next) => {
+        //     const decodedEmail = req.decoded.email;
+        //     console.log('llllllllll', decodedEmail);
+        // }
+
+
+
         app.get('/appointmentOptions', async (req, res) => {
             const query = {};
             const options = await appointmentCollections.find(query).toArray();
@@ -161,6 +169,20 @@ async function run() {
             const result = await userCollections.updateOne(filter, updateDoc, options);
             res.send(result)
         });
+
+        // // temporary update price
+        // app.get('/addPrice', async (req, res) => {
+        //     const filter = {};
+        //     const option = { upsert: true };
+        //     const updateDoc = {
+        //         $set: {
+        //             price: 399
+        //         }
+        //     }
+        //     const result = await appointmentCollections.updateMany(filter, updateDoc, option);
+        //     res.send(result);
+        // });
+
 
 
         app.get('/specialty', async (req, res) => {
