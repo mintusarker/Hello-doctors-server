@@ -49,6 +49,7 @@ async function run() {
         const bookingCollections = client.db("HelloDoctors").collection('bookings')
         const userCollections = client.db("HelloDoctors").collection('users')
         const doctorsCollections = client.db("HelloDoctors").collection('doctors')
+        const paymentCollections = client.db("HelloDoctors").collection('payments')
 
 
         // //verify Admin
@@ -136,7 +137,22 @@ async function run() {
             });
 
 
-        })
+        });
+
+        app.post('/payments', async (req, res) => {
+            const payment = req.body;
+            const result = await paymentCollections.insertOne(payment);
+            const id = payment.bookingId;
+            const filter = { _id: new ObjectId(id) }
+            const updatedDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId
+                }
+            }
+            const updateResult = await bookingCollections.updateOne(filter, updatedDoc)
+            res.send(result)
+        });
 
         // jwt
         app.get('/jwt', async (req, res) => {
