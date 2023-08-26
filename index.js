@@ -5,7 +5,7 @@ var jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-console.log(stripe);
+// console.log(stripe);
 
 const port = process.env.PORT || 5000;
 const app = express();
@@ -55,7 +55,7 @@ async function run() {
         // //verify Admin
         // const verifyAdmin = (req, res, next) => {
         //     const decodedEmail = req.decoded.email;
-        //     console.log('llllllllll', decodedEmail);
+        //     console.log('email', decodedEmail);
         // }
 
 
@@ -78,7 +78,7 @@ async function run() {
             res.send(options);
         });
 
-
+        //bookings
         app.post('/bookings', async (req, res) => {
             const booking = req.body;
             console.log(booking);
@@ -138,7 +138,8 @@ async function run() {
 
 
         });
-
+        
+        //payment store database
         app.post('/payments', async (req, res) => {
             const payment = req.body;
             const result = await paymentCollections.insertOne(payment);
@@ -175,14 +176,14 @@ async function run() {
             res.send(result)
         });
 
-
+        //get user
         app.get('/users', async (req, res) => {
             const query = {};
             const result = await userCollections.find(query).toArray();
             res.send(result);
         });
 
-
+        //delete user
         app.delete('/user/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
@@ -235,25 +236,28 @@ async function run() {
         // });
 
 
-
+        //doctors specialty
         app.get('/specialty', async (req, res) => {
             const query = {};
             const result = await appointmentCollections.find(query).project({ name: 1 }).toArray();
             res.send(result)
         });
 
+        //save doctors
         app.post('/doctors', verifyJWT, async (req, res) => {
             const doctor = req.body;
             const result = await doctorsCollections.insertOne(doctor);
             res.send(result);
         });
 
+        // get doctors
         app.get('/doctors', async (req, res) => {
             const query = {};
             const result = await doctorsCollections.find(query).toArray();
             res.send(result);
         });
 
+        //delete doctors
         app.delete('/doctors/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
